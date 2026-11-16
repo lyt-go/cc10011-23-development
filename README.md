@@ -75,5 +75,46 @@ npm run dev
 - 列表接口统一返回 `{ items, total, page, size }`，动作接口统一返回 `{ ok, message }`。
 - 状态流转只允许在 `app/services` 里改，路由层不做业务判断。
 
+## 用户洞察：生成批次与差异快照
+
+用户洞察报告的每次取数都落到可追溯的批次与不可变快照上，订阅推送只消费已发布快照：
+
+- 生成批次（`userinsight_batch`）：保存分析主题、目标人群、关键指标、数据区间、
+  分区边界与生成时间。同一分析主题存在「生成中」批次时重复提交直接复用，不新增任务。
+- 差异快照（`userinsight_snapshot`）：分区边界全部就绪后按同一区间计算关键指标变化
+  与核心发现，快照只读、带版本号；生成中的报告不能发布，发布后快照只供订阅读取，
+  历史快照（含已被替代的旧版本）始终可读。
+- 并发分区：分区完成回调在服务层用锁串行化，区间外边界忽略、已登记边界幂等；
+  快照生成后到达的**新**迟到分区通过 `/batches/{id}/late-partitions` 补入计划并触发重算。
+- 历史回填（`userinsight_backfill`）：回填批次号幂等（重复提交只写一次），
+  按分区边界推进，中断后从上一完整分区继续，全部完成后驱动生成批次与快照。
+- 订阅绑定：订阅正文绑定具体快照编号与下次生成时间。默认「跟随最新发布」，
+  报告重新发布时订阅随快照同步更新；也可固定到某个历史快照锁版。未绑定已发布快照的
+  订阅拒绝推送，避免发出过期报告。
+
+### 主要接口
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST | `/api/userinsight/reports/{id}/generation` | 提交生成（同主题生成中批次幂等复用） |
+| GET | `/api/userinsight/batches` | 生成批次列表，可按报告/状态过滤 |
+| POST | `/api/userinsight/batches/{id}/partitions` | 分区完成回调（边界判定、产出快照） |
+| POST | `/api/userinsight/batches/{id}/late-partitions` | 迟到分区回调（新边界补入并触发重算） |
+| GET | `/api/userinsight/snapshots` | 差异快照列表（历史版本保持可读） |
+| GET | `/api/userinsight/reports/{id}/diff-overview` | 报告页概览：人群、区间、指标变化 |
+| POST | `/api/userinsight/reports/{id}/backfills` | 登记回填批次（批次号幂等） |
+| POST | `/api/userinsight/backfills/{id}/partitions` | 回填分区回调（断点续传） |
+| POST | `/api/subscription/{id}/bind-snapshot` | 订阅绑定报告快照（支持锁版） |
+| GET | `/api/subscription/bound-snapshots` | 订阅业务面同步消费的快照视图 |
+| POST | `/api/subscription/{id}/send` | 按绑定快照推送，未绑定则拒绝 |
+
+端到端验证脚本在 `scripts/verify_userinsight.py`（依赖 `httpx` 供 TestClient 使用，
+仅测试需要，不进运行时依赖）：
+
+```bash
+cd backend && .venv/bin/pip install httpx
+.venv/bin/python -I ../scripts/verify_userinsight.py
+```
+
 领域：数据工程
 子方向：数据分析与数据应用

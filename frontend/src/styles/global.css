@@ -33,3 +33,21 @@ body { margin: 0; background: #f6f8fb; color: #1f2937; }
 .link { border: none; background: none; color: var(--brand); cursor: pointer; padding: 0; }
 .page-foot { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--muted); }
 .error-text { color: #b42318; }
+
+/* 用户洞察：生成批次 / 差异快照 / 回填面板 */
+.detail-panel { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin: 16px 0; }
+.detail-head { display: flex; justify-content: space-between; align-items: center; }
+.detail-subtitle { font-size: 14px; margin: 16px 0 8px; }
+.stat-text { font-size: 14px; font-weight: 600; }
+.row-active { background: #eef4ff; }
+.finding-cell { max-width: 320px; color: #334155; }
+.status-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; white-space: nowrap; background: #e2e8f0; color: #334155; }
+.status-已发布, .status-已启用, .status-已完成, .status-已生成 { background: #dcfce7; color: #166534; }
+.status-生成中, .status-订阅评审中, .status-进行中 { background: #fef3c7; color: #92400e; }
+.status-已重算 { background: #e0e7ff; color: #3730a3; }
+.status-已归档, .status-已暂停 { background: #f1f5f9; color: #64748b; }
+.trend-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+.trend-up { background: #dcfce7; color: #166534; }
+.trend-down { background: #fee2e2; color: #991b1b; }
+.trend-flat { background: #e2e8f0; color: #475569; }
+.trend-new { background: #e0e7ff; color: #3730a3; }
